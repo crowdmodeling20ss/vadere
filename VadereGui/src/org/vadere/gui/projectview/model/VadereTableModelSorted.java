@@ -69,7 +69,7 @@ public abstract class VadereTableModelSorted<T> extends DefaultTableModel {
 	}
 
 	private void safeRemove(final int row) {
+		removeRow(row);
 		rows.remove(row);
-		super.removeRow(row);
 	}
 }
