@@ -191,7 +191,7 @@ public class SIRGroupModel extends AbstractGroupModel<SIRGroup> {
     @Override
     public void update(final double simTimeInSec) {
         // check the positions of all pedestrians and switch groups to INFECTED (or REMOVED).
-        DynamicElementContainer<Pedestrian> c = topography.getPedestrianDynamicElements();
+        DynamicElementContainer<Pedestrian> pedestrians = topography.getPedestrianDynamicElements();
         //System.out.println("time: " + ++time + " simTimeInSec:" + simTimeInSec + " infected peds:" + c.getElements().stream().filter(pedestrian -> getGroup(pedestrian).getID() == SIRType.ID_INFECTED.ordinal()).count());
 
         /**
@@ -211,8 +211,27 @@ public class SIRGroupModel extends AbstractGroupModel<SIRGroup> {
         if (simTimeInSec - totalTimeInSec < 1) {
             return;
         }
-
         totalTimeInSec++;
+
+        applyInfection(pedestrians);
+
+        applyRecovery(pedestrians);
+    }
+
+    private void applyRecovery(DynamicElementContainer<Pedestrian> pedestrians) {
+        List<Pedestrian> infectedPedestrians = pedestrians.getElements()
+                .stream()
+                .filter(p -> getGroup(p).getID() == SIRType.ID_INFECTED.ordinal())
+                .collect(Collectors.toList());
+
+        for (Pedestrian p : infectedPedestrians) {
+            if (this.random.nextDouble() < attributesSIRG.getRecoveryRate()) {
+                recoverPedestrian(p);
+            }
+        }
+    }
+
+    private void applyInfection(DynamicElementContainer<Pedestrian> c) {
         if (c.getElements().size() > 0) {
             for (Pedestrian p : c.getElements()) {
                 List<DynamicElement> neighbours = getDynElementsAtPosition(topography, p.getPosition(), attributesSIRG.getInfectionMaxDistance());
@@ -232,6 +251,14 @@ public class SIRGroupModel extends AbstractGroupModel<SIRGroup> {
                     }
                 }
             }
+        }
+    }
+
+    private void recoverPedestrian(Pedestrian p) {
+        SIRGroup g = getGroup(p);
+        if (g.getID() == SIRType.ID_INFECTED.ordinal()) {
+            elementRemoved(p);
+            assignToGroup(p, SIRType.ID_REMOVED.ordinal());
         }
     }
 
