@@ -131,6 +131,11 @@ public class SIRGroupModel extends AbstractGroupModel<SIRGroup> {
         if (c.getElements().size() > 0) {
             // TODO: fill in code to assign pedestrians in the scenario at the beginning (i.e., not created by a source)
             //  to INFECTED or SUSCEPTIBLE groups.
+            for(Pedestrian p : c.getElements()) {
+                if (this.random.nextDouble() < attributesSIRG.getInfectionRate()) {
+                    infectPedestrian(p);
+                }
+            }
         }
     }
 
@@ -183,6 +188,7 @@ public class SIRGroupModel extends AbstractGroupModel<SIRGroup> {
         DynamicElementContainer<Pedestrian> c = topography.getPedestrianDynamicElements();
 
         if (c.getElements().size() > 0) {
+            // TODO: change here to use LinkedCellsGrid in org.vadere.util.geometry
             for (Pedestrian p : c.getElements()) {
                 // loop over neighbors and set infected if we are close
                 for (Pedestrian p_neighbor : c.getElements()) {
@@ -191,14 +197,18 @@ public class SIRGroupModel extends AbstractGroupModel<SIRGroup> {
                     double dist = p.getPosition().distance(p_neighbor.getPosition());
                     if (dist < attributesSIRG.getInfectionMaxDistance() &&
                             this.random.nextDouble() < attributesSIRG.getInfectionRate()) {
-                        SIRGroup g = getGroup(p);
-                        if (g.getID() == SIRType.ID_SUSCEPTIBLE.ordinal()) {
-                            elementRemoved(p);
-                            assignToGroup(p, SIRType.ID_INFECTED.ordinal());
-                        }
+                        infectPedestrian(p);
                     }
                 }
             }
+        }
+    }
+
+    private void infectPedestrian(Pedestrian p) {
+        SIRGroup g = getGroup(p);
+        if (g.getID() == SIRType.ID_SUSCEPTIBLE.ordinal()) {
+            elementRemoved(p);
+            assignToGroup(p, SIRType.ID_INFECTED.ordinal());
         }
     }
 }
