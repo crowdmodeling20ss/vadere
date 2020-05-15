@@ -11,9 +11,12 @@ import org.vadere.simulator.projects.Domain;
 import org.vadere.state.attributes.Attributes;
 import org.vadere.state.attributes.models.AttributesSIRG;
 import org.vadere.state.attributes.scenario.AttributesAgent;
+import org.vadere.state.scenario.DynamicElement;
 import org.vadere.state.scenario.DynamicElementContainer;
 import org.vadere.state.scenario.Pedestrian;
 import org.vadere.state.scenario.Topography;
+import org.vadere.util.geometry.LinkedCellsGrid;
+import org.vadere.util.geometry.shapes.VPoint;
 
 import java.util.HashMap;
 import java.util.LinkedHashMap;
@@ -21,6 +24,7 @@ import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
 import java.util.Random;
+import java.util.stream.Collectors;
 
 /**
  * Implementation of groups for a susceptible / infected / removed (SIR) model.
@@ -131,7 +135,7 @@ public class SIRGroupModel extends AbstractGroupModel<SIRGroup> {
         if (c.getElements().size() > 0) {
             // TODO: fill in code to assign pedestrians in the scenario at the beginning (i.e., not created by a source)
             //  to INFECTED or SUSCEPTIBLE groups.
-            for(Pedestrian p : c.getElements()) {
+            for (Pedestrian p : c.getElements()) {
                 if (this.random.nextDouble() < attributesSIRG.getInfectionRate()) {
                     infectPedestrian(p);
                 }
@@ -190,13 +194,18 @@ public class SIRGroupModel extends AbstractGroupModel<SIRGroup> {
         if (c.getElements().size() > 0) {
             // TODO: change here to use LinkedCellsGrid in org.vadere.util.geometry
             for (Pedestrian p : c.getElements()) {
-                // loop over neighbors and set infected if we are close
-                for (Pedestrian p_neighbor : c.getElements()) {
-                    if (p == p_neighbor || getGroup(p_neighbor).getID() != SIRType.ID_INFECTED.ordinal())
-                        continue;
-                    double dist = p.getPosition().distance(p_neighbor.getPosition());
-                    if (dist < attributesSIRG.getInfectionMaxDistance() &&
-                            this.random.nextDouble() < attributesSIRG.getInfectionRate()) {
+                List<DynamicElement> neighbours = getDynElementsAtPosition(topography, p.getPosition(), attributesSIRG.getInfectionMaxDistance());
+
+                List<Pedestrian> infectedNeighbours = neighbours
+                        .parallelStream()
+                        .map(dynamicElement -> (Pedestrian) dynamicElement)
+                        .filter(p_neighbor -> p != p_neighbor && getGroup(p_neighbor).getID() == SIRType.ID_INFECTED.ordinal())
+                        // we don't need line below. It should be checked already by getDynElementsAtPosition()
+                        .filter(p_neighbor -> p.getPosition().distance(p_neighbor.getPosition()) < attributesSIRG.getInfectionMaxDistance())
+                        .collect(Collectors.toList());
+
+                for (Pedestrian ignored : infectedNeighbours) {
+                    if (this.random.nextDouble() < attributesSIRG.getInfectionRate()) {
                         infectPedestrian(p);
                     }
                 }
@@ -210,5 +219,10 @@ public class SIRGroupModel extends AbstractGroupModel<SIRGroup> {
             elementRemoved(p);
             assignToGroup(p, SIRType.ID_INFECTED.ordinal());
         }
+    }
+
+    private List<DynamicElement> getDynElementsAtPosition(final Topography topography, VPoint sourcePosition, double radius) {
+        LinkedCellsGrid<DynamicElement> dynElements = topography.getSpatialMap(DynamicElement.class);
+        return dynElements.getObjects(sourcePosition, radius);
     }
 }
