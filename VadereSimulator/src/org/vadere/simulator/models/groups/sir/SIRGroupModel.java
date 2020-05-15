@@ -39,6 +39,8 @@ public class SIRGroupModel extends AbstractGroupModel<SIRGroup> {
     private Topography topography;
     private IPotentialFieldTarget potentialFieldTarget;
     private int totalInfected = 0;
+    private double totalTimeInSec = 0;
+    public static int time = 0;
 
     public SIRGroupModel() {
         this.groupsById = new LinkedHashMap<>();
@@ -190,9 +192,28 @@ public class SIRGroupModel extends AbstractGroupModel<SIRGroup> {
     public void update(final double simTimeInSec) {
         // check the positions of all pedestrians and switch groups to INFECTED (or REMOVED).
         DynamicElementContainer<Pedestrian> c = topography.getPedestrianDynamicElements();
+        //System.out.println("time: " + ++time + " simTimeInSec:" + simTimeInSec + " infected peds:" + c.getElements().stream().filter(pedestrian -> getGroup(pedestrian).getID() == SIRType.ID_INFECTED.ordinal()).count());
 
+        /**
+         *  The fixed time step 1-sec is used for infecting the pedestrians
+         *  to decouple the infection rate and the time step,
+         *
+         *  This 'update' method is called depending on the simTimeStepLength.
+         *  Let's say we have a simulation with finishTime=20.
+         *  If simTimeStepLength is given 0.5, the update function is called 40 times
+         *  If simTimeStepLength is given 0.1, the update function is called 200 times
+         *
+         *  Because of that for the same simulation time infection rate differs.
+         *
+         * !!! Attention !!!
+         *  TODO: If the simulation time less than 1, nobody infected!
+         */
+        if (simTimeInSec - totalTimeInSec < 1) {
+            return;
+        }
+
+        totalTimeInSec++;
         if (c.getElements().size() > 0) {
-            // TODO: change here to use LinkedCellsGrid in org.vadere.util.geometry
             for (Pedestrian p : c.getElements()) {
                 List<DynamicElement> neighbours = getDynElementsAtPosition(topography, p.getPosition(), attributesSIRG.getInfectionMaxDistance());
 
@@ -201,12 +222,13 @@ public class SIRGroupModel extends AbstractGroupModel<SIRGroup> {
                         .map(dynamicElement -> (Pedestrian) dynamicElement)
                         .filter(p_neighbor -> p != p_neighbor && getGroup(p_neighbor).getID() == SIRType.ID_INFECTED.ordinal())
                         // we don't need line below. It should be checked already by getDynElementsAtPosition()
-                        .filter(p_neighbor -> p.getPosition().distance(p_neighbor.getPosition()) < attributesSIRG.getInfectionMaxDistance())
+                        //.filter(p_neighbor -> p.getPosition().distance(p_neighbor.getPosition()) < attributesSIRG.getInfectionMaxDistance())
                         .collect(Collectors.toList());
 
                 for (Pedestrian ignored : infectedNeighbours) {
                     if (this.random.nextDouble() < attributesSIRG.getInfectionRate()) {
                         infectPedestrian(p);
+                        break;
                     }
                 }
             }
