@@ -1,12 +1,6 @@
 package org.vadere.gui.components.model;
 
 
-import java.awt.*;
-import java.util.Collection;
-import java.util.Random;
-import java.util.concurrent.ConcurrentHashMap;
-import java.util.function.Function;
-
 import org.jetbrains.annotations.NotNull;
 import org.vadere.meshing.mesh.gen.PMesh;
 import org.vadere.meshing.mesh.inter.IMesh;
@@ -15,47 +9,55 @@ import org.vadere.state.scenario.Pedestrian;
 import org.vadere.util.geometry.shapes.IPoint;
 import org.vadere.util.geometry.shapes.VRectangle;
 
+import java.awt.*;
+import java.util.ArrayList;
+import java.util.Collection;
+import java.util.List;
+import java.util.Random;
+import java.util.concurrent.ConcurrentHashMap;
+import java.util.function.Function;
+
 public abstract class SimulationModel<T extends DefaultSimulationConfig> extends DefaultModel {
 
-	public final T config;
-	private ConcurrentHashMap<Integer, Color> colorMap;
-	private Random random;
+    public final T config;
+    private ConcurrentHashMap<Integer, Color> colorMap;
+    private Random random;
 
-	@SuppressWarnings("unchecked")
-	public SimulationModel(final T config) {
-		super(config);
-		this.config = config;
-		this.colorMap = new ConcurrentHashMap<>();
-		this.colorMap.put(-1, config.getPedestrianDefaultColor());
-		this.random = new Random();
-	}
+    @SuppressWarnings("unchecked")
+    public SimulationModel(final T config) {
+        super(config);
+        this.config = config;
+        this.colorMap = new ConcurrentHashMap<>();
+        this.colorMap.put(-1, config.getPedestrianDefaultColor());
+        this.random = new Random();
+    }
 
-	public abstract Collection<Agent> getAgents();
+    public abstract Collection<Agent> getAgents();
 
-	public abstract Collection<Pedestrian> getPedestrians();
+    public abstract Collection<Pedestrian> getPedestrians();
 
-	public abstract int getTopographyId();
+    public abstract int getTopographyId();
 
-	public abstract double getSimTimeInSec();
+    public abstract double getSimTimeInSec();
 
-	public abstract Function<IPoint, Double> getPotentialField();
+    public abstract Function<IPoint, Double> getPotentialField();
 
-	public abstract boolean isFloorFieldAvailable();
+    public abstract boolean isFloorFieldAvailable();
 
-	@Override
-	public void resetTopographySize() {
-		fireChangeViewportEvent(new VRectangle(getTopographyBound()));
-	}
+    @Override
+    public void resetTopographySize() {
+        fireChangeViewportEvent(new VRectangle(getTopographyBound()));
+    }
 
-	public T getConfig() {
-		return config;
-	}
+    public T getConfig() {
+        return config;
+    }
 
-	public IMesh<?, ?, ?> getDiscretization() {
-		return new PMesh();
-	}
+    public IMesh<?, ?, ?> getDiscretization() {
+        return new PMesh();
+    }
 
-	public abstract void setAgentColoring(@NotNull final AgentColoring agentColoring);
+    public abstract void setAgentColoring(@NotNull final AgentColoring agentColoring);
 
     /*public double getPotential(final int x, final int y) {
         double result = 0.0;
@@ -99,32 +101,45 @@ public abstract class SimulationModel<T extends DefaultSimulationConfig> extends
 
     public abstract boolean isAlive(int pedId);
 
-	public Color getGroupColor(@NotNull final  Pedestrian ped) {
-		if (ped.getGroupIds().isEmpty() || (!ped.getGroupSizes().isEmpty() && ped.getGroupSizes().getFirst() == 1)) {
-			return config.getPedestrianDefaultColor();
-		}
+    public Color getGroupColor(@NotNull final Pedestrian ped) {
+        if (ped.getGroupIds().isEmpty() || (!ped.getGroupSizes().isEmpty() && ped.getGroupSizes().getFirst() == 1)) {
+            return config.getPedestrianDefaultColor();
+        }
+        List<Color> colorList = new ArrayList<>();
+        colorList.add(new Color(0, 0, 0));
+        colorList.add(new Color(255, 133, 0));
+        colorList.add(new Color(255, 255, 255));
+        colorList.add(new Color(231, 15, 15));
+        int groupId = ped.getGroupIds().getFirst();
+        Color c = colorMap.get(groupId);
+        if (c == null) {
+            for (Color color : colorList) {
+                if (!colorMap.containsValue(color)) {
+                    c = color;
+                    break;
+                }
+            }
+            if (c == null) {
+                c = new Color(Color.HSBtoRGB(random.nextFloat(), 1f, 0.75f));
+            }
+            colorMap.put(groupId, c);
 
-		int groupId = ped.getGroupIds().getFirst();
-		Color c = colorMap.get(groupId);
-		if (c == null) {
-			c = new Color(Color.HSBtoRGB(random.nextFloat(), 1f, 0.75f));
-			colorMap.put(groupId, c);
-		}
-		return c;
-	}
+        }
+        return c;
+    }
 
-	@Override
-	public synchronized void notifyObservers() {
-		// synchronized (config) {
-		if (config.hasChanged()) {
-			setChanged();
-			config.clearChange();
-			if(config.getAgentColoring() != AgentColoring.RANDOM) {
-				config.clearRandomColors();
-			}
-		}
-		// }
-		super.notifyObservers();
-	}
+    @Override
+    public synchronized void notifyObservers() {
+        // synchronized (config) {
+        if (config.hasChanged()) {
+            setChanged();
+            config.clearChange();
+            if (config.getAgentColoring() != AgentColoring.RANDOM) {
+                config.clearRandomColors();
+            }
+        }
+        // }
+        super.notifyObservers();
+    }
 
 }
