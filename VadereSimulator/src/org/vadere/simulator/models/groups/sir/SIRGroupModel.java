@@ -208,10 +208,10 @@ public class SIRGroupModel extends AbstractGroupModel<SIRGroup> {
          * !!! Attention !!!
          *  TODO: If the simulation time less than 1, nobody infected!
          */
-        if (simTimeInSec - totalTimeInSec < 1) {
-            return;
-        }
-        totalTimeInSec++;
+        //if (simTimeInSec - totalTimeInSec < 1) {
+        //    return;
+        //}
+        //totalTimeInSec++;
 
         applyInfection(pedestrians);
 
