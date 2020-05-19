@@ -6,12 +6,14 @@ import org.vadere.meshing.mesh.gen.PMesh;
 import org.vadere.meshing.mesh.inter.IMesh;
 import org.vadere.state.scenario.Agent;
 import org.vadere.state.scenario.Pedestrian;
+import org.vadere.util.data.SortedList;
 import org.vadere.util.geometry.shapes.IPoint;
 import org.vadere.util.geometry.shapes.VRectangle;
 
 import java.awt.*;
 import java.util.ArrayList;
 import java.util.Collection;
+import java.util.Comparator;
 import java.util.List;
 import java.util.Random;
 import java.util.concurrent.ConcurrentHashMap;
@@ -105,10 +107,9 @@ public abstract class SimulationModel<T extends DefaultSimulationConfig> extends
         if (ped.getGroupIds().isEmpty() || (!ped.getGroupSizes().isEmpty() && ped.getGroupSizes().getFirst() == 1)) {
             return config.getPedestrianDefaultColor();
         }
-        List<Color> colorList = new ArrayList<>();
-        colorList.add(new Color(0, 0, 0));
+        SortedList<Color> colorList = new SortedList<>(Comparator.comparing(Color::getRed));
         colorList.add(new Color(255, 133, 0));
-        colorList.add(new Color(255, 255, 255));
+        colorList.add(new Color(0, 0, 0));
         colorList.add(new Color(231, 15, 15));
         int groupId = ped.getGroupIds().getFirst();
         Color c = colorMap.get(groupId);
