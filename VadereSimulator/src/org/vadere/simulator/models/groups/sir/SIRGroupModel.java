@@ -86,7 +86,6 @@ public class SIRGroupModel extends AbstractGroupModel<SIRGroup> {
         }
     }
 
-
     @Override
     public void registerGroupSizeDeterminator(int sourceId, GroupSizeDeterminator gsD) {
         sourceNextGroups.put(sourceId, new LinkedList<>());

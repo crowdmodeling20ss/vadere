@@ -3,6 +3,7 @@ package org.vadere.gui.components.model;
 
 import java.awt.*;
 import java.util.Collection;
+import java.util.Comparator;
 import java.util.Random;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.function.Function;
@@ -12,6 +13,7 @@ import org.vadere.meshing.mesh.gen.PMesh;
 import org.vadere.meshing.mesh.inter.IMesh;
 import org.vadere.state.scenario.Agent;
 import org.vadere.state.scenario.Pedestrian;
+import org.vadere.util.data.SortedList;
 import org.vadere.util.geometry.shapes.IPoint;
 import org.vadere.util.geometry.shapes.VRectangle;
 
@@ -104,12 +106,25 @@ public abstract class SimulationModel<T extends DefaultSimulationConfig> extends
 			return config.getPedestrianDefaultColor();
 		}
 
-		int groupId = ped.getGroupIds().getFirst();
-		Color c = colorMap.get(groupId);
-		if (c == null) {
-			c = new Color(Color.HSBtoRGB(random.nextFloat(), 1f, 0.75f));
-			colorMap.put(groupId, c);
-		}
+        SortedList<Color> colorList = new SortedList<>(Comparator.comparing(Color::getRed));
+        colorList.add(new Color(255, 133, 0));
+        colorList.add(new Color(0, 0, 0));
+        colorList.add(new Color(231, 15, 15));
+        int groupId = ped.getGroupIds().getFirst();
+        Color c = colorMap.get(groupId);
+        if (c == null) {
+            for (Color color : colorList) {
+                if (!colorMap.containsValue(color)) {
+                    c = color;
+                    break;
+                }
+            }
+            if (c == null) {
+                c = new Color(Color.HSBtoRGB(random.nextFloat(), 1f, 0.75f));
+            }
+            colorMap.put(groupId, c);
+
+        }
 		return c;
 	}
 
